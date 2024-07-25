@@ -1,7 +1,7 @@
 package com.sakura.sakuravaults.commands
 
-import com.sakura.sakuravaults.utils.SakuraVaults
-import com.sakura.sakuravaults.VaultManager
+import com.sakura.sakuravaults.SakuraVaults
+import com.sakura.sakuravaults.utils.VaultManager
 import org.bukkit.Bukkit
 import org.bukkit.command.Command
 import org.bukkit.command.CommandExecutor

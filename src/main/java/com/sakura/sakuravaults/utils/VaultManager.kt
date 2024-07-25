@@ -1,6 +1,6 @@
-package com.sakura.sakuravaults
+package com.sakura.sakuravaults.utils
 
-import com.sakura.sakuravaults.utils.SakuraVaults
+import com.sakura.sakuravaults.SakuraVaults
 import org.bukkit.Bukkit
 import org.bukkit.Material
 import org.bukkit.configuration.file.YamlConfiguration

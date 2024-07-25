@@ -1,8 +1,8 @@
-package com.sakura.sakuravaults.utils
+package com.sakura.sakuravaults
 
-import com.sakura.sakuravaults.VaultManager
 import com.sakura.sakuravaults.commands.AdminCommand
 import com.sakura.sakuravaults.commands.VaultCommand
+import com.sakura.sakuravaults.utils.VaultManager
 import net.milkbowl.vault.economy.Economy
 import org.bukkit.plugin.java.JavaPlugin
 import java.sql.Connection
