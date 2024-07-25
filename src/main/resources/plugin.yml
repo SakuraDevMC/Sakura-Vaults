@@ -1,0 +1,13 @@
+name: SakuraVaults
+version: 1.0
+main: com.sakura.sakuravaults.utils.SakuraVaults
+api-version: 1.17
+depend: [Vault]
+commands:
+  pv:
+    description: Open your vault or a specific vault
+    usage: /pv [number]
+  pvadmin:
+    description: Admin commands for managing player vaults
+    usage: /pvadmin <open/view> <player> [number]
+    permission: sakuravaults.admin

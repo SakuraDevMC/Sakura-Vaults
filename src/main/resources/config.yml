@@ -1,0 +1,35 @@
+exponential_rate: 2.0
+glass_item:
+  material: "BLACK_STAINED_GLASS_PANE"
+  name: "Price: %price%"
+  lore: ["Unlock Slot #%slot%"]
+  model_data: 1234
+shulker_item:
+  unlocked:
+    material: "LIME_SHULKER_BOX"
+    name: "Vault #%vault%"
+    model_data: 5678
+  locked:
+    material: "GRAY_SHULKER_BOX"
+    name: "Vault #%vault%"
+    model_data: 5678
+messages:
+  vault_not_unlocked: "You need to unlock the previous vault to access this one!"
+  slot_not_unlocked: "You need to unlock the previous slot first!"
+  not_enough_money: "Not enough money to unlock this slot!"
+  slot_unlocked: "Slot unlocked!"
+  vault_unlocked: "Vault #%vault% unlocked!"
+  player_not_found: "Player not found."
+  only_players: "Only players can use this command."
+  no_permission: "You do not have permission to use this command."
+  invalid_action: "Invalid action. Use 'open' or 'view'."
+commands:
+  pv:
+    description: "Open your vault or a specific vault"
+    usage: "/pv [number]"
+  pvadmin:
+    description: "Admin commands for managing player vaults"
+    usage: "/pvadmin <open/view> <player> [number]"
+    permission: "sakuravaults.admin"
+gui:
+  vault_name: "CustomVault: #%vault%"
