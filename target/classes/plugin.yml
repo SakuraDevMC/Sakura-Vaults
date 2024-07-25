@@ -1,6 +1,6 @@
 name: SakuraVaults
 version: 1.0
-main: com.sakura.sakuravaults.utils.SakuraVaults
+main: com.sakura.sakuravaults.SakuraVaults
 api-version: 1.17
 depend: [Vault]
 commands:

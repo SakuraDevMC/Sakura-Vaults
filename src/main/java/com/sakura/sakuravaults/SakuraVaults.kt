@@ -14,6 +14,7 @@ class SakuraVaults : JavaPlugin() {
     companion object {
         lateinit var economy: Economy
         lateinit var connection: Connection
+        var isConnectionInitialized = false
     }
 
     override fun onEnable() {
@@ -27,7 +28,11 @@ class SakuraVaults : JavaPlugin() {
         saveDefaultConfig()
 
         // Initialize SQLite
-        initializeDatabase()
+        if (!initializeDatabase()) {
+            logger.severe("Database initialization failed! Disabling plugin.")
+            server.pluginManager.disablePlugin(this)
+            return
+        }
 
         // Register the VaultManager and Command Executors
         val vaultManager = VaultManager(this)
@@ -40,7 +45,9 @@ class SakuraVaults : JavaPlugin() {
     override fun onDisable() {
         // Plugin shutdown logic
         logger.info("SakuraVaults has been disabled")
-        connection.close()
+        if (isConnectionInitialized && !connection.isClosed) {
+            connection.close()
+        }
     }
 
     private fun setupEconomy(): Boolean {
@@ -58,37 +65,43 @@ class SakuraVaults : JavaPlugin() {
         return true
     }
 
-    private fun initializeDatabase() {
-        try {
+    private fun initializeDatabase(): Boolean {
+        return try {
             // Ensure the directory exists
             if (!dataFolder.exists()) {
                 dataFolder.mkdirs()
             }
 
             connection = DriverManager.getConnection("jdbc:sqlite:${dataFolder}/vaults.db")
-            connection.createStatement().executeUpdate(
-                """
-                CREATE TABLE IF NOT EXISTS vaults (
-                    player_uuid TEXT NOT NULL,
-                    vault_number INTEGER NOT NULL,
-                    slot_index INTEGER NOT NULL,
-                    item_data TEXT NOT NULL,
-                    PRIMARY KEY (player_uuid, vault_number, slot_index)
+            isConnectionInitialized = true
+
+            connection.createStatement().use { statement ->
+                statement.executeUpdate(
+                    """
+                    CREATE TABLE IF NOT EXISTS vaults (
+                        player_uuid TEXT NOT NULL,
+                        vault_number INTEGER NOT NULL,
+                        slot_index INTEGER NOT NULL,
+                        item_data TEXT NOT NULL,
+                        PRIMARY KEY (player_uuid, vault_number, slot_index)
+                    )
+                    """
                 )
-                """
-            )
-            connection.createStatement().executeUpdate(
-                """
-                CREATE TABLE IF NOT EXISTS unlocked_vaults (
-                    player_uuid TEXT NOT NULL,
-                    vault_number INTEGER NOT NULL,
-                    PRIMARY KEY (player_uuid, vault_number)
+                statement.executeUpdate(
+                    """
+                    CREATE TABLE IF NOT EXISTS unlocked_vaults (
+                        player_uuid TEXT NOT NULL,
+                        vault_number INTEGER NOT NULL,
+                        PRIMARY KEY (player_uuid, vault_number)
+                    )
+                    """
                 )
-                """
-            )
+            }
             logger.info("Database initialized successfully")
+            true
         } catch (e: SQLException) {
             logger.severe("Failed to initialize database: ${e.message}")
+            false
         }
     }
 }
