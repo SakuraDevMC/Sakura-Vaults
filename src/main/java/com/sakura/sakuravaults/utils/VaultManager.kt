@@ -12,10 +12,12 @@ import org.bukkit.event.inventory.InventoryClickEvent
 import org.bukkit.event.inventory.InventoryCloseEvent
 import org.bukkit.inventory.Inventory
 import org.bukkit.inventory.ItemStack
+import org.bukkit.inventory.meta.ItemMeta
 import java.sql.PreparedStatement
 import java.sql.ResultSet
 import java.sql.SQLException
 import java.util.*
+import kotlin.math.pow
 
 class VaultManager(private val plugin: SakuraVaults) : Listener {
 
@@ -41,7 +43,7 @@ class VaultManager(private val plugin: SakuraVaults) : Listener {
         val playerVaults = vaults.getOrPut(playerUUID) { mutableListOf() }
         if (vaultNumber > playerVaults.size) {
             for (i in playerVaults.size until vaultNumber) {
-                val newVault = Bukkit.createInventory(null, 54, formatComponent(plugin.config.getString("gui.vault_name")!!.replace("%vault%", (i + 1).toString())))
+                val newVault = Bukkit.createInventory(null, 54, formatComponentToString(plugin.config.getString("gui.vault_name")!!.replace("%vault%", (i + 1).toString())))
                 initializeVault(newVault, i + 1)
                 loadVaultContents(playerUUID, i + 1, newVault)
                 updateVaultIndicators(newVault, i + 1, playerUUID)
@@ -61,8 +63,8 @@ class VaultManager(private val plugin: SakuraVaults) : Listener {
         val item = ItemStack(Material.valueOf(plugin.config.getString("glass_item.material", "BLACK_STAINED_GLASS_PANE")!!))
         val meta = item.itemMeta
         val price = calculateUnlockCost(vaultNumber, slotIndex)
-        meta?.setDisplayName(formatMessageToString(plugin.config.getString("glass_item.name")?.replace("%price%", price.toString())?.replace("%slot%", slotIndex.toString())))
-        meta?.lore = plugin.config.getStringList("glass_item.lore").map { formatMessageToString(it.replace("%price%", price.toString()).replace("%slot%", slotIndex.toString())) }
+        meta?.setDisplayName(formatComponentToString(plugin.config.getString("glass_item.name")?.replace("%price%", price.toString())?.replace("%slot%", slotIndex.toString())))
+        meta?.lore = plugin.config.getStringList("glass_item.lore").map { formatComponentToString(it.replace("%price%", price.toString()).replace("%slot%", slotIndex.toString())) }
         if (plugin.config.contains("glass_item.model_data")) {
             meta?.setCustomModelData(plugin.config.getInt("glass_item.model_data"))
         }
@@ -86,7 +88,7 @@ class VaultManager(private val plugin: SakuraVaults) : Listener {
         val material = Material.valueOf(plugin.config.getString("shulker_item.$type.material")!!)
         val item = ItemStack(material)
         val meta = item.itemMeta
-        meta?.setDisplayName(formatMessageToString(plugin.config.getString("shulker_item.$type.name")?.replace("%vault%", vaultNumber.toString())))
+        meta?.setDisplayName(formatComponentToString(plugin.config.getString("shulker_item.$type.name")?.replace("%vault%", vaultNumber.toString())))
         if (plugin.config.contains("shulker_item.$type.model_data")) {
             meta?.setCustomModelData(plugin.config.getInt("shulker_item.$type.model_data"))
         }
@@ -94,7 +96,7 @@ class VaultManager(private val plugin: SakuraVaults) : Listener {
         return item
     }
 
-    fun unlockSlot(player: Player, vaultNumber: Int, slotIndex: Int) {
+    private fun unlockSlot(player: Player, vaultNumber: Int, slotIndex: Int) {
         val vault = getVault(player.uniqueId, vaultNumber)
         val cost = calculateUnlockCost(vaultNumber, slotIndex)
         val previousSlotIndex = slotIndex - 1
@@ -117,7 +119,7 @@ class VaultManager(private val plugin: SakuraVaults) : Listener {
 
     private fun calculateUnlockCost(vaultNumber: Int, slotIndex: Int): Double {
         val exponentialRate = plugin.config.getDouble("exponential_rate", 2.0)
-        return 5022.0 * Math.pow(exponentialRate, (vaultNumber - 1).toDouble()) * (slotIndex + 1)
+        return 5022.0 * exponentialRate.pow((vaultNumber - 1).toDouble()) * (slotIndex + 1)
     }
 
     private fun isVaultFullyUnlocked(vault: Inventory): Boolean {
@@ -143,7 +145,7 @@ class VaultManager(private val plugin: SakuraVaults) : Listener {
         val slotIndex = event.rawSlot
 
         if (slotIndex in 45..53) {
-            // Handle clicks on shulker boxes
+            // Handle clicks on skulker boxes
             val shulkerItem = event.currentItem ?: return
             val targetVault = slotIndex - 44
             if (shulkerItem.type == Material.valueOf(plugin.config.getString("shulker_item.unlocked.material")!!)) {
@@ -244,14 +246,14 @@ class VaultManager(private val plugin: SakuraVaults) : Listener {
     }
 
     private fun formatMessage(message: String): Component {
-        return LegacyComponentSerializer.legacy('&').deserialize(message)
+        return LegacyComponentSerializer.legacyAmpersand().deserialize(message)
     }
 
-    private fun formatMessageToString(message: String?): String {
-        return if (message == null) "" else LegacyComponentSerializer.legacy('&').serialize(LegacyComponentSerializer.legacy('&').deserialize(message))
+    private fun formatComponent(text: String?): Component {
+        return LegacyComponentSerializer.legacyAmpersand().deserialize(text ?: "")
     }
 
-    private fun formatComponent(text: String): Component {
-        return LegacyComponentSerializer.legacy('&').deserialize(text)
+    private fun formatComponentToString(text: String?): String {
+        return LegacyComponentSerializer.legacySection().serialize(LegacyComponentSerializer.legacyAmpersand().deserialize(text ?: ""))
     }
 }

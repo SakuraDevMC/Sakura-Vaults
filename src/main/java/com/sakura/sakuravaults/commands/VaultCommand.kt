@@ -16,17 +16,15 @@ class VaultCommand(private val vaultManager: VaultManager, private val plugin: S
             return true
         }
 
-        val player = sender
-
         if (args.isNullOrEmpty()) {
-            vaultManager.openVault(player, 1)
+            vaultManager.openVault(sender, 1)
         } else {
             val vaultNumber = args[0].toIntOrNull()
             if (vaultNumber == null) {
-                player.sendMessage(formatMessage("Invalid vault number."))
+                sender.sendMessage(formatMessage("Invalid vault number."))
                 return true
             }
-            vaultManager.openVault(player, vaultNumber)
+            vaultManager.openVault(sender, vaultNumber)
         }
 
         return true
