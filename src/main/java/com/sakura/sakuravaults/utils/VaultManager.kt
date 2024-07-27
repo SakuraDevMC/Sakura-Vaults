@@ -1,6 +1,8 @@
 package com.sakura.sakuravaults.utils
 
 import com.sakura.sakuravaults.SakuraVaults
+import net.kyori.adventure.text.Component
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
 import org.bukkit.Bukkit
 import org.bukkit.Material
 import org.bukkit.configuration.file.YamlConfiguration
@@ -28,7 +30,7 @@ class VaultManager(private val plugin: SakuraVaults) : Listener {
         val actualPlayer = targetPlayer ?: player
         val unlocked = unlockedVaults.getOrPut(actualPlayer.uniqueId) { loadUnlockedVaults(actualPlayer.uniqueId) }
         if (vaultNumber !in unlocked) {
-            plugin.config.getString("messages.vault_not_unlocked")?.let { player.sendMessage(it) }
+            player.sendMessage(formatMessage(plugin.config.getString("messages.vault_not_unlocked") ?: "Vault not unlocked."))
             return
         }
         val vault = getVault(actualPlayer.uniqueId, vaultNumber)
@@ -39,7 +41,7 @@ class VaultManager(private val plugin: SakuraVaults) : Listener {
         val playerVaults = vaults.getOrPut(playerUUID) { mutableListOf() }
         if (vaultNumber > playerVaults.size) {
             for (i in playerVaults.size until vaultNumber) {
-                val newVault = Bukkit.createInventory(null, 54, plugin.config.getString("gui.vault_name")!!.replace("%vault%", (i + 1).toString()))
+                val newVault = Bukkit.createInventory(null, 54, formatComponent(plugin.config.getString("gui.vault_name")!!.replace("%vault%", (i + 1).toString())))
                 initializeVault(newVault, i + 1)
                 loadVaultContents(playerUUID, i + 1, newVault)
                 updateVaultIndicators(newVault, i + 1, playerUUID)
@@ -59,8 +61,8 @@ class VaultManager(private val plugin: SakuraVaults) : Listener {
         val item = ItemStack(Material.valueOf(plugin.config.getString("glass_item.material", "BLACK_STAINED_GLASS_PANE")!!))
         val meta = item.itemMeta
         val price = calculateUnlockCost(vaultNumber, slotIndex)
-        meta?.setDisplayName(plugin.config.getString("glass_item.name")?.replace("%price%", price.toString())?.replace("%slot%", slotIndex.toString()))
-        meta?.lore = plugin.config.getStringList("glass_item.lore").map { it.replace("%price%", price.toString()).replace("%slot%", slotIndex.toString()) }
+        meta?.setDisplayName(formatMessageToString(plugin.config.getString("glass_item.name")?.replace("%price%", price.toString())?.replace("%slot%", slotIndex.toString())))
+        meta?.lore = plugin.config.getStringList("glass_item.lore").map { formatMessageToString(it.replace("%price%", price.toString()).replace("%slot%", slotIndex.toString())) }
         if (plugin.config.contains("glass_item.model_data")) {
             meta?.setCustomModelData(plugin.config.getInt("glass_item.model_data"))
         }
@@ -84,7 +86,7 @@ class VaultManager(private val plugin: SakuraVaults) : Listener {
         val material = Material.valueOf(plugin.config.getString("shulker_item.$type.material")!!)
         val item = ItemStack(material)
         val meta = item.itemMeta
-        meta?.setDisplayName(plugin.config.getString("shulker_item.$type.name")?.replace("%vault%", vaultNumber.toString()))
+        meta?.setDisplayName(formatMessageToString(plugin.config.getString("shulker_item.$type.name")?.replace("%vault%", vaultNumber.toString())))
         if (plugin.config.contains("shulker_item.$type.model_data")) {
             meta?.setCustomModelData(plugin.config.getInt("shulker_item.$type.model_data"))
         }
@@ -97,19 +99,19 @@ class VaultManager(private val plugin: SakuraVaults) : Listener {
         val cost = calculateUnlockCost(vaultNumber, slotIndex)
         val previousSlotIndex = slotIndex - 1
         if (slotIndex > 9 && vault.getItem(previousSlotIndex)?.type == Material.valueOf(plugin.config.getString("glass_item.material", "BLACK_STAINED_GLASS_PANE")!!)) {
-            player.sendMessage(plugin.config.getString("messages.slot_not_unlocked")!!)
+            player.sendMessage(formatMessage(plugin.config.getString("messages.slot_not_unlocked")!!))
             return
         }
         if (SakuraVaults.economy.getBalance(player) >= cost) {
             SakuraVaults.economy.withdrawPlayer(player, cost)
             vault.setItem(slotIndex, ItemStack(Material.AIR))
-            plugin.config.getString("messages.slot_unlocked")?.let { player.sendMessage(it) }
+            player.sendMessage(formatMessage(plugin.config.getString("messages.slot_unlocked")!!))
             if (isVaultFullyUnlocked(vault)) {
                 unlockNextVault(player, vaultNumber)
             }
             updateVaultIndicators(vault, vaultNumber, player.uniqueId)
         } else {
-            plugin.config.getString("messages.not_enough_money")?.let { player.sendMessage(it) }
+            player.sendMessage(formatMessage(plugin.config.getString("messages.not_enough_money")!!))
         }
     }
 
@@ -131,7 +133,7 @@ class VaultManager(private val plugin: SakuraVaults) : Listener {
         val unlocked = unlockedVaults.getOrPut(player.uniqueId) { loadUnlockedVaults(player.uniqueId) }
         unlocked.add(currentVault + 1)
         saveUnlockedVault(player.uniqueId, currentVault + 1)
-        player.sendMessage(plugin.config.getString("messages.vault_unlocked")!!.replace("%vault%", (currentVault + 1).toString()))
+        player.sendMessage(formatMessage(plugin.config.getString("messages.vault_unlocked")!!.replace("%vault%", (currentVault + 1).toString())))
     }
 
     @org.bukkit.event.EventHandler
@@ -147,7 +149,7 @@ class VaultManager(private val plugin: SakuraVaults) : Listener {
             if (shulkerItem.type == Material.valueOf(plugin.config.getString("shulker_item.unlocked.material")!!)) {
                 openVault(player, targetVault)
             } else if (shulkerItem.type == Material.valueOf(plugin.config.getString("shulker_item.locked.material")!!)) {
-                player.sendMessage(plugin.config.getString("messages.vault_not_unlocked")!!)
+                player.sendMessage(formatMessage(plugin.config.getString("messages.vault_not_unlocked")!!))
             }
             event.isCancelled = true
             return
@@ -239,5 +241,17 @@ class VaultManager(private val plugin: SakuraVaults) : Listener {
             plugin.logger.severe("Failed to load unlocked vaults: ${e.message}")
         }
         return unlockedVaults
+    }
+
+    private fun formatMessage(message: String): Component {
+        return LegacyComponentSerializer.legacy('&').deserialize(message)
+    }
+
+    private fun formatMessageToString(message: String?): String {
+        return if (message == null) "" else LegacyComponentSerializer.legacy('&').serialize(LegacyComponentSerializer.legacy('&').deserialize(message))
+    }
+
+    private fun formatComponent(text: String): Component {
+        return LegacyComponentSerializer.legacy('&').deserialize(text)
     }
 }
